@@ -8,20 +8,14 @@ def log_stats():
     nginx_collection = client.logs.nginx
 
     # Get the total number of documents
-    n_logs = nginx_collection.estimated_document_count()
+    n_logs = nginx_collection.count_documents({})
     print(f'{n_logs} logs')
 
-    # Aggregate to count documents for each method
+    # Count the number of documents for each HTTP method
     methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    pipeline = [
-        {"$match": {"method": {"$in": methods}}},
-        {"$group": {"_id": "$method", "count": {"$sum": 1}}}
-    ]
-    method_counts = {doc["_id"]: doc["count"] for doc in nginx_collection.aggregate(pipeline)}
-
     print('Methods:')
     for method in methods:
-        count = method_counts.get(method, 0)
+        count = nginx_collection.count_documents({"method": method})
         print(f'\tmethod {method}: {count}')
 
     # Count the number of GET requests to /status
