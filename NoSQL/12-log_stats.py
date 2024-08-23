@@ -13,17 +13,18 @@ def log_stats():
 
     # Count the number of documents for each HTTP method
     methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    
+
     # Using aggregation to get counts for all methods in one query
-    pipeline = [
+    method_counts = {method: 0 for method in methods}
+    for doc in nginx_collection.aggregate([
         {"$group": {"_id": "$method", "count": {"$sum": 1}}}
-    ]
-    method_counts = {doc["_id"]: doc["count"] for doc in nginx_collection.aggregate(pipeline)}
+    ]):
+        if doc["_id"] in method_counts:
+            method_counts[doc["_id"]] = doc["count"]
 
     print('Methods:')
     for method in methods:
-        count = method_counts.get(method, 0)
-        print(f'\tmethod {method}: {count}')
+        print(f'\tmethod {method}: {method_counts[method]}')
 
     # Count the number of GET requests to /status
     status_check = nginx_collection.count_documents({"method": "GET", "path": "/status"})
