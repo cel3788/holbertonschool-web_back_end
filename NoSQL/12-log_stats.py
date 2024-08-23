@@ -1,35 +1,39 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+"""
+Provide some stats about Nginx logs stored in MongoDB
+Database: logs, Collection: nginx, Display same as example
+first line: x logs, x number of documents in this collection
+second line: Methods
+5 lines with method = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+one line with method=GET, path=/status
+"""
+from pymongo import MongoClient
 
-import logging
-import sys
 
-from logstash_async.handler import AsynchronousLogstashHandler
+METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
-host = 'localhost'
-port = 5959
 
-test_logger = logging.getLogger('python-logstash-logger')
-test_logger = logging.getLogger('')
-test_logger.setLevel(logging.INFO)
-test_logger.addHandler(AsynchronousLogstashHandler(host, port, database_path='logstash_test.db'))
+def log_stats(mongo_collection, option=None):
+    """
+    Prototype: def log_stats(mongo_collection, option=None):
+    Provide some stats about Nginx logs stored in MongoDB
+    """
+    items = {}
+    if option:
+        value = mongo_collection.count_documents(
+            {"method": {"$regex": option}})
+        print(f"\tmethod {option}: {value}")
+        return
 
-test_logger.error('python-logstash-async: test logstash error message.')
-test_logger.info('python-logstash-async: test logstash info message.')
-test_logger.warning('python-logstash-async: test logstash warning message.')
-test_logger.debug('python-logstash-async: test logstash debug message.')
+    result = mongo_collection.count_documents(items)
+    print(f"{result} logs")
+    print("Methods:")
+    for method in METHODS:
+        log_stats(nginx_collection, method)
+    status_check = mongo_collection.count_documents({"path": "/status"})
+    print(f"{status_check} status check")
 
-try:
-    1 / 0
-except Exception as e:
-    test_logger.exception(u'Exception: %s', e)
 
-# add extra field to logstash message
-extra = {
-    'test_string': 'python version: ' + repr(sys.version_info),
-    'test_boolean': True,
-    'test_dict': {'a': 1, 'b': 'c'},
-    'test_float': 1.23,
-    'test_integer': 123,
-    'test_list': [1, 2, '3'],
-}
-test_logger.info('python-logstash: test extra fields', extra=extra)
+if __name__ == "__main__":
+    nginx_collection = MongoClient('mongodb://127.0.0.1:27017').logs.nginx
+    log_stats(nginx_collection)
