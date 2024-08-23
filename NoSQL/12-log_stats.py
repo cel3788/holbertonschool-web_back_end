@@ -1,20 +1,35 @@
-#!/usr/bin/env python3
-"""
-Script that provides some stats about Nginx logs stored in MongoDB.
-"""
-from pymongo import MongoClient
+# -*- coding: utf-8 -*-
 
+import logging
+import sys
 
-if __name__ == "__main__":
-    client = MongoClient('mongodb://localhost:27017')
-    collec = client.logs.nginx
+from logstash_async.handler import AsynchronousLogstashHandler
 
-    print(f'{collec.count_documents({})} logs')
-    print('Methods:')
+host = 'localhost'
+port = 5959
 
-    print(f'\tmethod GET: {collec.count_documents({"method": "GET"})}')
-    print(f'\tmethod POST: {collec.count_documents({"method": "POST"})}')
-    print(f'\tmethod PUT: {collec.count_documents({"method": "PUT"})}')
-    print(f'\tmethod PATCH: {collec.count_documents({"method": "PATCH"})}')
-    print(f'\tmethod DELETE: {collec.count_documents({"method": "DELETE"})}')
-    print(f'{collec.count_documents({"path": "/status"})} status check')
+test_logger = logging.getLogger('python-logstash-logger')
+test_logger = logging.getLogger('')
+test_logger.setLevel(logging.INFO)
+test_logger.addHandler(AsynchronousLogstashHandler(host, port, database_path='logstash_test.db'))
+
+test_logger.error('python-logstash-async: test logstash error message.')
+test_logger.info('python-logstash-async: test logstash info message.')
+test_logger.warning('python-logstash-async: test logstash warning message.')
+test_logger.debug('python-logstash-async: test logstash debug message.')
+
+try:
+    1 / 0
+except Exception as e:
+    test_logger.exception(u'Exception: %s', e)
+
+# add extra field to logstash message
+extra = {
+    'test_string': 'python version: ' + repr(sys.version_info),
+    'test_boolean': True,
+    'test_dict': {'a': 1, 'b': 'c'},
+    'test_float': 1.23,
+    'test_integer': 123,
+    'test_list': [1, 2, '3'],
+}
+test_logger.info('python-logstash: test extra fields', extra=extra)
